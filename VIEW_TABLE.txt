@@ -1,0 +1,45 @@
+CREATE VIEW campos_usar_view AS
+SELECT
+    t.s_periodo,
+    t.s_nombre_reunion,
+    t.s_num_sesion,
+    t.s_turno,
+    t.flag_reunion,
+    t.tip_reunion,
+    t.rubro_reunion,
+    t.s_nombres,
+    t.s_correo_usuario,
+    t.d_fec_ingreso,
+    t.n_dur_segundos,
+    t.n_dur_minutos,
+    t.n_dur_horas,
+    t.s_estado_usuario,
+
+    CASE
+        WHEN t.n_dur_segundos IS NOT NULL AND t.n_dur_segundos > 0 THEN
+            CONCAT(
+                LEAST(
+                    ROUND((t.n_dur_segundos / NULLIF(a.admin_dur_segundos, 0)) * 100, 2),
+                    100
+                ), '%'
+            )
+        ELSE '0%'
+    END AS s_porcentaje_asistencia,
+    t.d_fec_carga
+FROM
+    tem_reuniones_zoom t
+LEFT JOIN (
+    -- Tiempo total del administrador por reunión
+    SELECT
+        s_nombre_reunion,
+        MAX(n_dur_segundos) AS admin_dur_segundos
+    FROM
+        tem_reuniones_zoom
+    WHERE
+        s_correo_usuario = 'datagrowth.community@gmail.com'
+    GROUP BY
+        s_nombre_reunion
+) a
+ON t.s_nombre_reunion = a.s_nombre_reunion
+WHERE
+    t.tip_reunion IN ('GE', 'MC', 'MU', 'CE');
